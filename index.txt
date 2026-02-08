@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOIBL.GROUP - Wealth Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Playfair+Display:ital,wght@0,400;1,400&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-serif {
+            font-family: 'Playfair Display', serif;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .grain-overlay {
+            pointer-events: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            opacity: 0.03;
+            background-image: url('https://grainy-gradients.vercel.app/noise.svg');
+        }
+        /* Custom scrollbar for premium look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICON COMPONENTS (Inline SVGs for 1:1 ClickFunnels compatibility) ---
+        const IconWrapper = ({ children, size = 24, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {children}
+            </svg>
+        );
+
+        const Icons = {
+            Shield: (props) => <IconWrapper {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></IconWrapper>,
+            Target: (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconWrapper>,
+            Zap: (props) => <IconWrapper {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconWrapper>,
+            TrendingUp: (props) => <IconWrapper {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></IconWrapper>,
+            Lock: (props) => <IconWrapper {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconWrapper>,
+            Eye: (props) => <IconWrapper {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></IconWrapper>,
+            ArrowRight: (props) => <IconWrapper {...props}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconWrapper>,
+            CheckCircle2: (props) => <IconWrapper {...props}><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></IconWrapper>,
+            PieChart: (props) => <IconWrapper {...props}><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></IconWrapper>,
+            UserCheck: (props) => <IconWrapper {...props}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></IconWrapper>,
+            Building2: (props) => <IconWrapper {...props}><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 18h12"/><path d="M6 14h12"/><path d="M6 10h12"/><path d="M6 6h12"/><path d="M2 22h20"/></IconWrapper>,
+            ChevronRight: (props) => <IconWrapper {...props}><polyline points="9 18 15 12 9 6"/></IconWrapper>,
+            Play: (props) => <IconWrapper {...props}><polygon points="5 3 19 12 5 21 5 3"/></IconWrapper>,
+            ArrowUpRight: (props) => <IconWrapper {...props}><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></IconWrapper>,
+            AlertCircle: (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></IconWrapper>,
+            BarChart3: (props) => <IconWrapper {...props}><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></IconWrapper>,
+            Layers: (props) => <IconWrapper {...props}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></IconWrapper>,
+            Activity: (props) => <IconWrapper {...props}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></IconWrapper>,
+            Maximize2: (props) => <IconWrapper {...props}><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></IconWrapper>,
+        };
+
+        const App = () => {
+            const [isScrolled, setIsScrolled] = useState(false);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    setIsScrolled(window.scrollY > 50);
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            const Section = ({ children, className = "", id = "", dark = false }) => (
+                <section id={id} className={`py-20 md:py-32 px-6 md:px-12 lg:px-24 relative overflow-hidden ${dark ? 'bg-[#020617] text-white' : 'bg-white text-slate-900'} ${className}`}>
+                    <div className="max-w-7xl mx-auto relative z-10">
+                        {children}
+                    </div>
+                </section>
+            );
+
+            const GoldText = ({ children, className = "" }) => (
+                <span className={`text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F3E5AB] to-[#C5A059] ${className}`}>
+                    {children}
+                </span>
+            );
+
+            return (
+                <div className="min-h-screen bg-[#020617] font-sans selection:bg-[#D4AF37]/30 selection:text-white">
+                    <div className="grain-overlay"></div>
+
+                    {/* Navigation */}
+                    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled ? 'bg-[#020617]/90 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-8'}`}>
+                        <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
+                            <div className="flex items-center space-x-4">
+                                <img 
+                                    src="https://statics.myclickfunnels.com/workspace/ekbrWl/image/20681999/file/5ef2f70bbe2f9b1fcd25139ace432584.png" 
+                                    alt="LOIBL.GROUP Logo" 
+                                    className="h-8 md:h-10 w-auto"
+                                />
+                                <div className="h-6 w-px bg-white/20 hidden md:block"></div>
+                                <span className="font-bold tracking-[0.3em] text-[10px] uppercase text-white hidden md:block font-serif">Loibl.Group</span>
+                            </div>
+                            <button className="px-6 py-2 border border-[#D4AF37]/50 text-[#D4AF37] text-[10px] font-bold uppercase tracking-widest rounded-sm hover:bg-[#D4AF37] hover:text-[#020617] transition-all duration-500">
+                                Termin anfragen
+                            </button>
+                        </div>
+                    </nav>
+
+                    {/* SEKTION 1 – HERO */}
+                    <Section className="pt-32 pb-16 lg:pt-48 lg:pb-24 min-h-screen flex items-center" dark>
+                        <div className="absolute top-0 right-0 w-1/3 h-full bg-[#D4AF37]/5 blur-[120px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+                            <div className="lg:col-span-6">
+                                <div className="inline-flex items-center space-x-2 px-3 py-1 mb-6 border border-[#D4AF37]/20 bg-[#D4AF37]/5 rounded-sm">
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#D4AF37]">Wealth Architecture 2026</span>
+                                </div>
+                                
+                                <h1 className="text-4xl md:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tighter mb-8 text-white">
+                                    Warum 5.000–10.000 € <br />
+                                    Einkommen dich <br />
+                                    <GoldText className="font-serif italic font-light">nicht reich machen.</GoldText>
+                                </h1>
+                                
+                                <p className="text-xl md:text-2xl text-white font-medium mb-6">
+                                    Hohes Gehalt fühlt sich sicher an – <br className="hidden md:block" />
+                                    hält dich aber oft vom Vermögensaufbau ab.
+                                </p>
+
+                                <p className="text-lg text-slate-400 font-light leading-relaxed mb-10 max-w-xl">
+                                    In diesem kostenlosen 5-Minuten-Überblick bekommst du Klarheit, wie Vermögensaufbau für Gutverdiener 2026 wirklich funktioniert – und warum viele trotz hohem Einkommen scheitern.
+                                </p>
+                                
+                                <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                                    <button className="group px-10 py-5 bg-white text-[#020617] font-black text-xs uppercase tracking-widest rounded-sm hover:bg-[#D4AF37] hover:text-white transition-all duration-500 flex items-center justify-center gap-3 shadow-2xl">
+                                        Strategie-Video ansehen <Icons.ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-white/5">
+                                    {[
+                                        { t: "Klarheit statt Halbwissen", icon: Icons.Shield },
+                                        { t: "Struktur statt Einzelentscheidungen", icon: Icons.Target },
+                                        { t: "Überblick statt Verkaufsdruck", icon: Icons.Zap }
+                                    ].map((item) => (
+                                        <div key={item.t} className="flex items-center space-x-3 group">
+                                            <item.icon size={14} className="text-[#D4AF37] group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] uppercase tracking-wider text-slate-300 font-bold leading-tight">{item.t}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="lg:col-span-6 relative group">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-[#D4AF37] to-[#C5A059] rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-white/10 shadow-2xl">
+                                    <img 
+                                        src="https://statics.myclickfunnels.com/workspace/ekbrWl/image/20049900/file/72fa58423570219a1d3802593c3fbf59.png" 
+                                        alt="Video Preview Wealth Architecture" 
+                                        className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <button className="w-20 h-20 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-500 group/btn">
+                                            <Icons.Play size={24} fill="white" className="ml-1 group-hover/btn:scale-110 transition-transform" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* TRUST BAR */}
+                    <div className="bg-[#020617] py-12 border-y border-white/5 overflow-hidden">
+                        <div className="max-w-7xl mx-auto px-6 md:px-12 text-center">
+                            <p className="text-[10px] uppercase tracking-[0.5em] text-slate-500 mb-10">Bekannt aus</p>
+                            <div className="flex flex-wrap justify-center items-center gap-10 md:gap-16 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
+                                <span className="text-white text-lg font-bold tracking-tighter">wirtschaft tv</span>
+                                <span className="text-white text-lg font-bold tracking-tighter uppercase">Business Insider</span>
+                                <span className="text-white text-lg font-bold tracking-tighter italic font-serif text-xl">FOCUS</span>
+                                <span className="text-white text-lg font-bold tracking-tighter uppercase">WELT</span>
+                                <span className="text-white text-lg font-bold tracking-tighter">Finanzblatt</span>
+                                <span className="text-white text-lg font-bold tracking-tighter">Business Punk</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* SEKTION 2 – REALITÄTSRAHMEN */}
+                    <Section className="bg-[#fcfcfc] border-b border-slate-100">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
+                            <div>
+                                <span className="text-[#D4AF37] font-bold tracking-[0.4em] uppercase text-[10px] block mb-8">Realitätsrahmen</span>
+                                <h2 className="text-4xl md:text-5xl font-bold text-slate-950 leading-[1.1] tracking-tighter mb-10">
+                                    Das Problem ist nicht dein Einkommen. <br />
+                                    <span className="text-slate-400 font-serif italic font-light text-3xl md:text-4xl block mt-2">Es ist das System dahinter.</span>
+                                </h2>
+                                <p className="text-xl font-medium text-slate-800 leading-relaxed mb-8">
+                                    Die meisten Gutverdiener spielen ein Einkommensspiel – <br />
+                                    während Vermögende längst ein Systemspiel spielen.
+                                </p>
+                            </div>
+                            <div className="lg:pt-20">
+                                <div className="relative p-12 border-l border-slate-200">
+                                    <p className="text-xl text-slate-600 font-light leading-relaxed italic mb-8">
+                                        "Wer gut verdient, übernimmt Verantwortung. Für Familie. Für Entscheidungen. Für Stabilität. Genau dieses Verhalten wird im klassischen Finanzsystem nicht belohnt – sondern ausgebremst."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* SYSTEM-LÜCKE VISUALISIERUNG */}
+                    <Section className="bg-white">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                            <div className="space-y-8">
+                                <div>
+                                    <span className="text-red-500 font-bold tracking-[0.4em] uppercase text-[10px] block mb-6">Strukturelles Defizit</span>
+                                    <h2 className="text-4xl md:text-5xl font-bold text-slate-950 tracking-tighter leading-tight mb-6">
+                                        Warum Fleiß allein <br />
+                                        <span className="text-slate-400 font-serif italic font-light text-3xl">deinen Lebensstandard nicht hält.</span>
+                                    </h2>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    {[
+                                        { h: "Lebensstandard", p: "Wenn du nicht privat vorsorgst, ist es unausweichlich, dass sich dein Lebensstandard um 180° drehen muss, sobald du in den Ruhestand gehst." },
+                                        { h: "Rentenlücke", p: "Die staatliche Versorgung deckt oft nur einen Bruchteil deines gewohnten Netto-Einkommens. Die Lücke ist systembedingt." },
+                                        { h: "Inflation & Pflege", p: "Kaufkraftverlust und steigende Kosten im Alter sind die lautlosen Killer jedes unstrukturierten Vermögens." }
+                                    ].map((item, i) => (
+                                        <div key={i} className="flex gap-4 p-5 rounded-xl border border-slate-50 hover:bg-slate-50 transition-colors group">
+                                            <div className="mt-1 flex-shrink-0 w-5 h-5 rounded-full border border-red-200 flex items-center justify-center text-red-500">
+                                                <Icons.AlertCircle size={12} />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 text-sm uppercase tracking-tight mb-1">{item.h}</h4>
+                                                <p className="text-xs text-slate-500 leading-relaxed font-light">{item.p}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="relative p-12 bg-[#020617] rounded-3xl overflow-hidden shadow-2xl border border-white/5 group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 to-transparent"></div>
+                                <div className="relative">
+                                    <h3 className="text-white font-bold mb-12 flex items-center gap-3">
+                                        <Icons.BarChart3 size={20} className="text-[#D4AF37]" />
+                                        <span className="uppercase tracking-widest text-xs">Renten in Deutschland: Analyse 2026</span>
+                                    </h3>
+
+                                    <div className="flex items-end justify-between h-64 gap-8">
+                                        <div className="flex-1 flex flex-col items-center">
+                                            <div className="w-full bg-gradient-to-t from-[#D4AF37] to-[#F3E5AB] rounded-t-lg h-full relative">
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-white font-black text-2xl">100%</div>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 uppercase tracking-widest mt-4 text-center">Einkommen heute</span>
+                                        </div>
+
+                                        <div className="flex flex-col items-center justify-center h-full pt-10 text-[#D4AF37]">
+                                            <div className="h-full border-r border-dashed border-[#D4AF37]/30 flex items-center justify-center">
+                                                <div className="rotate-90 whitespace-nowrap text-[10px] uppercase font-bold tracking-[0.3em] mb-20">
+                                                    Rentenlücke: ca. 64%
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 flex flex-col items-center justify-end h-full">
+                                            <div className="w-full bg-slate-800 rounded-t-lg h-[36%] relative">
+                                                <div className="absolute -top-10 left-1/2 -translate-x-1/2 text-slate-400 font-black text-2xl">ca. 36%</div>
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 uppercase tracking-widest mt-4 text-center">Spätere Rente</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* SEKTION 3 – DIE FALLE */}
+                    <Section dark className="bg-slate-950">
+                        <div className="mb-20 text-white">
+                            <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tighter">Die Falle hoher Einkommen</h2>
+                            <p className="text-xl text-[#D4AF37] font-serif italic">Sicherheit ersetzt Struktur.</p>
+                            <p className="mt-8 text-slate-400 max-w-2xl font-light leading-relaxed">
+                                Mit steigendem Einkommen wächst kein Vermögen automatisch – sondern oft nur die Komplexität.
+                            </p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
+                            {[
+                                { 
+                                    icon: Icons.TrendingUp, 
+                                    h: "Fixkosten steigen unbemerkt", 
+                                    p: "Der Lifestyle passt sich schleichend dem Gehalt an, ohne dass echter Substanzwert entsteht." 
+                                },
+                                { 
+                                    icon: Icons.PieChart, 
+                                    h: "Steuern begrenzen Skalierung", 
+                                    p: "Wer viel Steuern zahlt, ist nicht reich – sondern unstrukturiert. Du stößt an eine gläserne Decke." 
+                                },
+                                { 
+                                    icon: Icons.Eye, 
+                                    h: "Komfort verdrängt Strategie", 
+                                    p: "Ein hohes Netto blendet. Man glaubt an Fortschritt, wo eigentlich nur Zeit gegen Geld getauscht wird." 
+                                }
+                            ].map((item, i) => (
+                                <div key={i} className="group p-10 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] rounded-xl transition-all duration-500">
+                                    <div className="w-10 h-10 flex items-center justify-center bg-[#D4AF37]/10 text-[#D4AF37] rounded-sm mb-8 group-hover:scale-110 transition-transform">
+                                        <item.icon size={20} />
+                                    </div>
+                                    <h4 className="text-lg font-bold mb-4 text-white uppercase tracking-wider">{item.h}</h4>
+                                    <p className="text-slate-400 leading-relaxed font-light text-sm">{item.p}</p>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <div className="mt-20 flex flex-col md:flex-row justify-between items-center gap-6 opacity-40">
+                            <p className="text-3xl font-serif italic text-white">Viel Leistung. Wenig Hebel.</p>
+                            <div className="h-px flex-1 bg-white/10 hidden md:block mx-8"></div>
+                            <span className="text-[10px] uppercase tracking-[0.5em] text-[#D4AF37] font-bold">Die Architektur der Fessel</span>
+                        </div>
+                    </Section>
+
+                    {/* SEKTION 4 – DIE ILLUSION */}
+                    <Section className="bg-white">
+                        <div className="max-w-4xl mb-16">
+                            <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter leading-none text-slate-950">
+                                Warum klassische Lösungen <br />
+                                <GoldText className="italic font-serif">nicht ausreichen.</GoldText>
+                            </h2>
+                            <p className="text-xl text-slate-800 font-medium mb-12">Sparen ist kein Plan. Produkte sind kein System.</p>
+                            
+                            <div className="space-y-6">
+                                {[
+                                    { label: "Sparen", val: "Schützt Kaufkraft – aber baut kein Vermögen." },
+                                    { label: "ETFs", val: "Langfristig – aber langsam." },
+                                    { label: "Versicherungen", val: "Stabil – aber träge." }
+                                ].map((item, i) => (
+                                    <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-8 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors group">
+                                        <span className="text-xs font-black uppercase tracking-widest text-[#D4AF37] mb-2 md:mb-0 w-32">{item.label}</span>
+                                        <span className="text-xl font-light text-slate-700">{item.val}</span>
+                                        <Icons.ArrowUpRight size={16} className="text-slate-300 group-hover:text-[#D4AF37] transition-colors hidden md:block" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12 text-slate-950">
+                            {[
+                                "Zeit arbeitet gegen Gutverdiener",
+                                "Einzelprodukte lösen keine Strukturprobleme",
+                                "„Irgendwann“ ist kein Zeitpunkt"
+                            ].map((text, i) => (
+                                <div key={i} className="flex items-start gap-4 p-6 bg-slate-50 rounded-xl">
+                                    <span className="font-serif italic text-[#D4AF37] text-xl">0{i+1}</span>
+                                    <p className="font-bold text-slate-900 tracking-tight leading-snug">{text}</p>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <p className="text-center mt-20 text-2xl font-serif italic text-slate-400">Du kommst voran – aber nicht raus.</p>
+                    </Section>
+
+                    {/* SEKTION 5 – DIE WAHRHEIT */}
+                    <Section dark className="bg-[#020617] text-white">
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(212,175,55,0.05),transparent_50%)]"></div>
+                        <div className="max-w-4xl">
+                            <h2 className="text-4xl md:text-6xl font-bold mb-8 leading-tight tracking-tighter">
+                                Vermögen entsteht nicht durch <GoldText className="font-serif italic font-light">mehr Arbeit.</GoldText>
+                            </h2>
+                            <p className="text-xl text-white font-medium mb-6">Sondern durch bessere Strukturen.</p>
+                            <p className="text-lg text-slate-400 font-light leading-relaxed mb-16">
+                                Vermögen folgt Regeln. Nicht Motivation.
+                            </p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {[
+                                    { t: "Fremdkapital", d: "Der intelligente Einsatz von Bankkapital als Multiplikator." },
+                                    { t: "Steuerliche Hebel", d: "Die gezielte Umwandlung von Steuerlast in Substanz." },
+                                    { t: "Reproduzierbare Systeme", d: "Wachstum, das unabhängig von Zeit skaliert." }
+                                ].map((item, i) => (
+                                    <div key={i} className="p-10 border border-white/5 bg-white/[0.02] rounded-xl group hover:border-[#D4AF37]/30 transition-all">
+                                        <span className="text-[10px] font-bold text-[#D4AF37] mb-4 block">KERN-ELEMENT 0{i+1}</span>
+                                        <h4 className="text-xl font-bold mb-3 text-white">{item.t}</h4>
+                                        <p className="text-slate-400 text-sm font-light leading-relaxed">{item.d}</p>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <p className="mt-20 text-center text-xl font-bold text-[#D4AF37] italic font-serif">Hier trennt sich Einkommen von Vermögen.</p>
+                        </div>
+                    </Section>
+
+                    {/* STRATEGIE-VERGLEICH */}
+                    <Section className="bg-white">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="bg-slate-900 rounded-2xl p-12 text-white relative group overflow-hidden">
+                                <div className="relative z-10">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-12">Herkömmlicher Ansatz</span>
+                                    <h3 className="text-3xl font-bold mb-8 tracking-tighter">
+                                        Eine "Kapitalanlage", <br />
+                                        <span className="text-slate-400 font-serif italic font-light">die oft nur verwaltet wird.</span>
+                                    </h3>
+                                    <p className="text-slate-400 font-light leading-relaxed mb-12 text-sm italic">
+                                        *Kontinuierlich steigende Mieten ermöglichen nachhaltige Immobilieninvestitionen – doch ohne Struktur bleiben sie Einzelstücke ohne Systemeffekt.
+                                    </p>
+                                    <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-slate-500 border-t border-white/5 pt-8">
+                                        <Icons.Activity size={14} /> Einzellösung statt System
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-12 text-slate-950 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 to-transparent"></div>
+                                <div className="relative z-10">
+                                    <div className="flex justify-between items-start mb-12">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4AF37]">LOIBL.GROUP Standard</span>
+                                        <Icons.Layers size={24} className="text-[#D4AF37]" />
+                                    </div>
+                                    <h3 className="text-3xl font-bold mb-8 tracking-tighter leading-tight">
+                                        Ein <GoldText className="font-serif italic font-light text-4xl">ganzheitlicher Partner</GoldText> für die strategische Vermögenswertbildung.
+                                    </h3>
+                                    <p className="text-slate-600 font-light leading-relaxed mb-12 text-sm">
+                                        Wir verkaufen keine Objekte. Wir konstruieren Systeme, in denen Immobilien die logische Konsequenz der Steuer- und Zinsarchitektur sind.
+                                    </p>
+                                    <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-[#D4AF37] border-t border-slate-200 pt-8">
+                                        <Icons.Maximize2 size={14} /> Architektur & Substanz
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* SEKTION 6 – ÜBERGANG IMMOBILIEN */}
+                    <Section dark className="bg-[#020617] text-center text-white">
+                        <div className="max-w-4xl mx-auto">
+                            <Icons.Building2 size={40} className="mx-auto mb-8 text-[#D4AF37] opacity-50" />
+                            <h2 className="text-4xl md:text-6xl font-bold mb-8 tracking-tighter">
+                                Warum Immobilien 2026 nicht optional sind – sondern logisch.
+                            </h2>
+                            <p className="text-2xl text-white font-medium mb-12">
+                                Nicht als Spekulation. Sondern als Vermögens-Infrastruktur.
+                            </p>
+                            <div className="p-10 border border-white/10 bg-white/[0.02] rounded-2xl inline-block max-w-2xl">
+                                <p className="text-xl text-slate-400 font-light leading-relaxed">
+                                    Immobilien sind kein Selbstläufer. Und ganz sicher kein Lifestyle. <br />
+                                    Richtig eingesetzt sind sie kein Investment – sondern ein Werkzeug.
+                                </p>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* SEKTION 7 – DIE 3 STRUKTURELLEN GRÜNDE */}
+                    <Section className="bg-white text-slate-950">
+                        <div className="mb-24">
+                            <h2 className="text-4xl md:text-6xl font-bold mb-6 tracking-tighter">
+                                Drei strukturelle Gründe machen Immobilien 2026 unverzichtbar.
+                            </h2>
+                            <p className="text-xl text-slate-500 font-medium">Nicht als Meinung. Sondern als Konsequenz.</p>
+                        </div>
+
+                        <div className="space-y-32">
+                            {/* Block 1 */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                                <div className="lg:col-span-4">
+                                    <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase block mb-6">Struktur-Grund 01</span>
+                                    <h3 className="text-3xl font-bold tracking-tighter mb-6 uppercase">ZUGANG ZU KAPITAL SCHLÄGT EIGENKAPITAL</h3>
+                                    <p className="text-slate-600 font-light leading-relaxed">
+                                        Vermögen entsteht nicht aus Geld. Sondern aus Zugang zu Kapital.
+                                    </p>
+                                </div>
+                                <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {[
+                                        "Banken finanzieren Struktur, nicht Hoffnung",
+                                        "Eigenkapital hebelt Fremdkapital",
+                                        "Inflation arbeitet mit, nicht gegen dich"
+                                    ].map((p, i) => (
+                                        <div key={i} className="p-8 bg-slate-50 rounded-xl border-t-2 border-[#D4AF37] font-bold text-slate-900 text-sm">{p}</div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Block 2 */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                                <div className="lg:col-span-4">
+                                    <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase block mb-6">Struktur-Grund 02</span>
+                                    <h3 className="text-3xl font-bold tracking-tighter mb-6 uppercase">STRUKTUR ENTSCHEIDET, WAS DU BEHÄLTST</h3>
+                                    <p className="text-slate-600 font-light leading-relaxed uppercase font-bold text-sm">
+                                        WER VIEL STEUERN ZAHLT, IST NICHT REICH – SONDERN UNSTRUKTURIERT.
+                                    </p>
+                                </div>
+                                <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {[
+                                        "Abschreibungen",
+                                        "Zinsabzug",
+                                        "Einkommensumwandlung"
+                                    ].map((p, i) => (
+                                        <div key={i} className="p-8 bg-slate-50 rounded-xl border-t-2 border-[#D4AF37] font-bold text-slate-900 text-sm text-center">{p}</div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Block 3 */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+                                <div className="lg:col-span-4">
+                                    <span className="text-[10px] font-bold text-[#D4AF37] tracking-[0.3em] uppercase block mb-6">Struktur-Grund 03</span>
+                                    <h3 className="text-3xl font-bold tracking-tighter mb-6 uppercase">SYSTEME SKALIEREN. EINZELENTSCHEIDUNGEN NICHT.</h3>
+                                    <p className="text-slate-600 font-light leading-relaxed uppercase font-bold text-sm">
+                                        VERMÖGEN WÄCHST NICHT ZUFÄLLIG. ES WÄCHST SYSTEMATISCH.
+                                    </p>
+                                </div>
+                                <div className="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {[
+                                        "Standardisierbar",
+                                        "Skalierbar",
+                                        "Reproduzierbar"
+                                    ].map((p, i) => (
+                                        <div key={i} className="p-8 bg-slate-50 rounded-xl border-t-2 border-[#D4AF37] font-bold text-slate-900 text-sm text-center">{p}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* SEKTION 8 – VIDEO EINORDNUNG */}
+                    <Section dark className="bg-slate-950 border-y border-white/5 text-white">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tighter leading-tight">
+                                Eine ehrliche Einordnung. Kein Verkauf.
+                            </h2>
+                            <p className="text-xl text-[#D4AF37] font-serif italic mb-12">
+                                Kein Training. Keine Anleitung. Kein Druck.
+                            </p>
+                            <div className="bg-white/[0.02] p-12 rounded-2xl border border-white/5 text-left mb-12">
+                                <p className="text-xl text-slate-300 font-light leading-relaxed mb-8">
+                                    Dieses Video erklärt nicht, <span className="text-white font-bold underline decoration-[#D4AF37] underline-offset-4">was</span> du kaufen sollst. <br />
+                                    Es zeigt, <span className="text-white font-bold underline decoration-[#D4AF37] underline-offset-4">wie</span> Vermögensarchitektur gedacht wird.
+                                </p>
+                                <p className="text-slate-500 font-medium">Der nächste Schritt ist kein Kauf. Es ist Klarheit.</p>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* SEKTION 9 – SOCIAL PROOF */}
+                    <Section className="bg-white text-slate-950">
+                        <div className="text-center mb-20">
+                            <h2 className="text-3xl font-bold mb-4 tracking-tighter uppercase">Erfahrungen statt Versprechen</h2>
+                            <p className="text-slate-500 uppercase tracking-widest text-xs font-bold">Menschen, die diesen Weg strukturiert gegangen sind.</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+                            {[
+                                "Sachlich. Ruhig. Ohne Druck.",
+                                "Endlich Klarheit statt Marketing.",
+                                "Fokus auf langfristige Entscheidungen."
+                            ].map((text, i) => (
+                                <div key={i} className="text-center group">
+                                    <div className="w-8 h-px bg-[#D4AF37] mx-auto mb-6 group-hover:w-16 transition-all"></div>
+                                    <p className="text-xl text-slate-900 font-medium leading-relaxed italic">"{text}"</p>
+                                </div>
+                            ))}
+                        </div>
+                    </Section>
+
+                    {/* SEKTION 10 – ÜBERGANG ZUM GESPRÄCH */}
+                    <Section dark className="pb-40 bg-black text-white">
+                        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-[radial-gradient(circle_at_50%_100%,rgba(212,175,55,0.05),transparent_70%)] opacity-50"></div>
+                        <div className="max-w-4xl mx-auto text-center relative">
+                            <h2 className="text-5xl md:text-8xl font-bold mb-10 tracking-tighter leading-[0.9]">
+                                Der nächste Schritt ist kein Investment. <br />
+                                <GoldText className="font-serif italic font-light underline decoration-1 underline-offset-[16px]">Es ist ein Gespräch.</GoldText>
+                            </h2>
+                            <div className="max-w-2xl mx-auto space-y-8 mb-16">
+                                <p className="text-xl text-white font-medium leading-relaxed">
+                                    Nicht um dich zu überzeugen. <br />
+                                    Sondern um zu prüfen, ob dieser Weg zu deiner Situation passt.
+                                </p>
+                                <p className="text-slate-400 font-light">
+                                    Vermögensaufbau ist keine Entscheidung für heute. <br />
+                                    Sondern für die nächsten 20 Jahre.
+                                </p>
+                            </div>
+                            
+                            <button className="group relative px-12 py-7 bg-white text-[#020617] font-black text-xs uppercase tracking-[0.3em] rounded-sm overflow-hidden hover:bg-[#D4AF37] hover:text-white transition-all duration-700 shadow-[0_20px_50px_rgba(255,255,255,0.05)]">
+                                JETZT VERFÜGBARKEIT PRÜFEN
+                            </button>
+                            
+                            <div className="mt-24 flex flex-wrap justify-center gap-10 opacity-30 text-[9px] font-bold uppercase tracking-[0.4em]">
+                                <div className="flex items-center gap-2 text-white"><Icons.Lock size={12} className="text-[#D4AF37]" /> Diskretion</div>
+                                <div className="flex items-center gap-2 text-white"><Icons.UserCheck size={12} className="text-[#D4AF37]" /> Keine Beratung</div>
+                                <div className="flex items-center gap-2 text-white"><Icons.Target size={12} className="text-[#D4AF37]" /> Fundierte Analyse</div>
+                            </div>
+                        </div>
+                    </Section>
+
+                    {/* Footer */}
+                    <footer className="py-20 bg-black text-slate-600 border-t border-white/5 px-6">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+                            <div className="flex flex-col space-y-6">
+                                <img 
+                                    src="https://statics.myclickfunnels.com/workspace/ekbrWl/image/20681999/file/5ef2f70bbe2f9b1fcd25139ace432584.png" 
+                                    alt="LOIBL.GROUP" 
+                                    className="h-6 w-auto opacity-40 grayscale"
+                                />
+                                <p className="max-w-xs text-[9px] font-bold uppercase tracking-[0.3em] leading-relaxed text-slate-500">
+                                    LOIBL.GROUP – ARCHITEKTUR DER SUBSTANZ <br />
+                                    Exklusive Vermögenskonzepte 2026.
+                                </p>
+                            </div>
+                            <div className="flex gap-12 text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                                <a href="#" className="hover:text-[#D4AF37] transition-colors">Impressum</a>
+                                <a href="#" className="hover:text-[#D4AF37] transition-colors">Datenschutz</a>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
